@@ -1,5 +1,6 @@
 package com.example.restintro.controller;
 
+import com.example.restintro.exception.ResourceNotFoundException;
 import com.example.restintro.model.User;
 import com.example.restintro.service.UserService;
 import org.springframework.boot.context.config.ConfigDataResourceNotFoundException;
@@ -29,18 +30,37 @@ public class UserController {
     @PostMapping("/addUser")
     public User getUser(@RequestParam(required = false) String username,@RequestParam(required = false) String password){
         return userService.save(new User(username, password));
+
     }
 
-    @PostMapping("/deleteUser")
-    public void deleteUser(@RequestParam Long id) {
+    @PostMapping("/deleteUser/{id}")
+    public Map<String,Boolean> deleteUser(@PathVariable long id)
+    throws ResourceNotFoundException{
         userService.deleteById(id);
+        Map<String,Boolean> response = new HashMap<>();
+        response.put("deleted",Boolean.TRUE);
+        return response;
     }
 
 
-    @PostMapping("/editUser/{id}")
-    public void editUser(@PathVariable long id,@RequestParam(required = false) String username ,@RequestParam(required = false) String password){
-
-
+    @PutMapping("/editUser/{id}")
+    public ResponseEntity<User> editUser(@PathVariable long id,@RequestParam(required = false) String username ,@RequestParam(required = false) String password)
+    throws ResourceNotFoundException{
+        User user = userService.findById(id).orElseThrow(() -> new ResourceNotFoundException("No user with this id "+id+" exists"));
+        if(username == null && password != null){
+            user.setPassword(password);
+            userService.save(user);
+        }
+        if(username != null && password == null){
+            user.setUsername(username);
+            userService.save(user);
+        }
+        if(username != null && password != null){
+            user.setUsername(username);
+            user.setPassword(password);
+            userService.save(user);
+        }
+        return ResponseEntity.ok(user);
     }
 
 }
